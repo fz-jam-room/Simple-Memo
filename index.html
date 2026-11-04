@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Memo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Product+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #fbfbfe; --text: #2b2d42; --sub: #6c757d; --card: #ffffff; --border: #e9ecef; --accent: #818cf8; --hover: #f1f3f9; }
+        [data-theme="dark"] { --bg: #12131c; --text: #f8fafc; --sub: #94a3b8; --card: #1e202e; --border: #2d3045; --accent: #a5b4fc; --hover: #2b2e42; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Product Sans', 'Noto Sans JP', -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); transition: .2s; }
+        header { display: flex; align-items: center; gap: 12px; height: 64px; padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--card); position: sticky; top: 0; z-index: 100; font-weight: bold; }
+        .layout { display: flex; min-height: calc(100vh - 64px); }
+        aside { width: 84px; padding: 12px 6px; background: var(--card); border-right: 1px solid var(--border); transition: width .2s; flex-shrink: 0; }
+        aside.open { width: 220px; }
+        .nav-item { display: flex; align-items: center; height: 52px; padding: 0 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--sub); white-space: nowrap; margin-bottom: 4px; gap: 16px; }
+        .nav-item:hover { background: var(--hover); color: var(--text); }
+        .nav-item.active { background: rgba(129,140,248,0.1); color: var(--accent); }
+        .nav-icon { width: 24px; height: 24px; flex-shrink: 0; fill: currentColor; }
+        .nav-content { display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: .15s; line-height: 1.2; }
+        .nav-label { font-size: 11px; color: var(--sub); font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        aside.open .nav-content { opacity: 1; pointer-events: auto; }
+        main { flex: 1; padding: 24px; max-width: 800px; margin: 0 auto; }
+        .input-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 32px; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        textarea { width: 100%; border: none; outline: none; resize: none; background: transparent; color: inherit; font-size: 14px; min-height: 50px; line-height: 1.5; font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; flex-wrap: wrap; gap: 8px; }
+        .tool-btn-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .tool-btn { background: none; border: 1px solid var(--border); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; color: var(--sub); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; }
+        .tool-btn:hover { background: var(--hover); color: var(--text); }
+        .tool-btn.active { background: rgba(129,140,248,0.15); color: var(--accent); border-color: rgba(129,140,248,0.3); }
+        .tool-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        .tool-label { font-size: 10px; color: var(--sub); font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        .popup { display: none; position: absolute; bottom: 64px; left: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 8px; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; }
+        .popup.active { display: flex; }
+        .dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .dot.selected { border-color: var(--text); }
+        .counter { font-size: 12px; color: var(--sub); display: flex; align-items: center; gap: 6px; font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        .c-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer; color: var(--sub); transition: all .15s; font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        .c-btn:hover { background: var(--hover); color: var(--text); }
+        .c-btn.active { background: rgba(129,140,248,0.15); color: var(--accent); border-color: rgba(129,140,248,0.3); font-weight: 500; }
+        .save-btn { background: var(--accent); color: #fff; border: none; padding: 6px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .card img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+        .card p { margin: 0 0 28px; word-break: break-all; white-space: pre-wrap; font-size: 13px; line-height: 1.5; font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        .card-btns { position: absolute; bottom: 8px; right: 8px; display: flex; gap: 4px; }
+        .action-btn { background: rgba(255,255,255,0.6); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer; color: var(--sub); backdrop-filter: blur(2px); font-family: 'Product Sans', 'Noto Sans JP', sans-serif; }
+        .action-btn:hover { background: var(--hover); color: var(--text); }
+        .del:hover { background: #ffe4e6; color: #e11d48; border-color: #fda4af; }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="tool-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">
+            <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+        <div>Simple Memo</div>
+    </header>
+    <div class="layout">
+        <aside id="sidebar">
+            <div class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                <div class="nav-content"><span id="t-memos" style="font-weight:500;">メモ一覧</span><span class="nav-label">List</span></div>
+            </div>
+            <div class="nav-item" onclick="document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark')">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                <div class="nav-content"><span id="t-theme" style="font-weight:500;">テーマ切替</span><span class="nav-label">Theme</span></div>
+            </div>
+            <div class="nav-item" onclick="toggleLang()">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                <div class="nav-content"><span id="t-lang" style="font-weight:500;">言語切替</span><span class="nav-label" id="cur-lang">日本語</span></div>
+            </div>
+        </aside>
+        <main>
+            <div class="input-box" id="inputCard">
+                <div id="previewBox" style="display:none; margin-bottom:8px; position:relative;">
+                    <img id="previewImg" style="max-width:100%; max-height:180px; border-radius:8px; object-fit:cover;">
+                    <button onclick="clearImg()" style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.5); color:#fff; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer;">✕</button>
+                </div>
+                <textarea id="memoInput" placeholder="メモを入力..." oninput="updateCount()"></textarea>
+                <div class="toolbar">
+                    <div style="display:flex; gap:10px; position:relative;">
+                        <div class="tool-btn-wrap">
+                            <button class="tool-btn" onclick="document.getElementById('fileInput').click()">
+                                <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                            </button>
+                            <span class="tool-label" id="l-img">画像</span>
+                        </div>
+                        <div class="tool-btn-wrap">
+                            <button class="tool-btn" id="textColorBtn" onclick="event.stopPropagation(); document.getElementById('colorPopup').classList.toggle('active')">
+                                <span style="border-bottom: 2px solid currentColor; line-height: 1.1;">A</span>
+                            </button>
+                            <span class="tool-label" id="l-color">文字色</span>
+                        </div>
+                        <div class="tool-btn-wrap">
+                            <button class="tool-btn" id="boldBtn" onclick="toggleBold()">B</button>
+                            <span class="tool-label" id="l-bold">太字</span>
+                        </div>
+                        <div class="tool-btn-wrap">
+                            <button class="tool-btn" id="italicBtn" onclick="toggleItalic()"><i>I</i></button>
+                            <span class="tool-label" id="l-italic">斜体</span>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadImg(event)">
+                        <div class="popup" id="colorPopup">
+                            <div class="dot selected" style="background:var(--text);" onclick="setTextColor('default', this)"></div>
+                            <div class="dot" style="background:#ef4444;" onclick="setTextColor('#ef4444', this)"></div>
+                            <div class="dot" style="background:#f59e0b;" onclick="setTextColor('#f59e0b', this)"></div>
+                            <div class="dot" style="background:#10b981;" onclick="setTextColor('#10b981', this)"></div>
+                            <div class="dot" style="background:#3b82f6;" onclick="setTextColor('#3b82f6', this)"></div>
+                            <div class="dot" style="background:#8b5cf6;" onclick="setTextColor('#8b5cf6', this)"></div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="counter">
+                            <span id="countTxt">0文字</span>
+                            <button class="c-btn active" id="sBtn" onclick="toggleOpt('s')">空白</button>
+                            <button class="c-btn active" id="pBtn" onclick="toggleOpt('p')">句読点</button>
+                        </div>
+                        <button class="save-btn" id="l-save" onclick="save()">保存</button>
+                    </div>
+                </div>
+            </div>
+            <div id="container" class="grid"></div>
+        </main>
+    </div>
+    <script>
+        let memos = JSON.parse(localStorage.getItem('simple_memos') || '[]');
+        let imgData = null, textColor = 'default', isBold = false, isItalic = false, incS = true, incP = true, lang = 'ja';
+        
+        const dict = {
+            ja: { memos:'メモ一覧', theme:'テーマ切替', lang:'言語切替', cur:'日本語', ph:'メモを入力...', img:'画像', color:'文字色', bold:'太字', italic:'斜体', save:'保存', space:'空白', punct:'句読点', empty:'メモはまだありません', copy:'コピー', done:'完了!', del:'削除', unit:'文字' },
+            en: { memos:'Notes', theme:'Theme', lang:'Language', cur:'English', ph:'Type a memo...', img:'Image', color:'Color', bold:'Bold', italic:'Italic', save:'Save', space:'Space', punct:'Punct', empty:'No memos yet', copy:'Copy', done:'Delete', unit:' chars' }
+        };
+
+        window.onclick = () => document.getElementById('colorPopup').classList.remove('active');
+        render();
+        
+        function toggleLang() {
+            lang = lang === 'ja' ? 'en' : 'ja';
+            const t = dict[lang];
+            document.getElementById('t-memos').innerText = t.memos;
+            document.getElementById('t-theme').innerText = t.theme;
+            document.getElementById('t-lang').innerText = t.lang;
+            document.getElementById('cur-lang').innerText = t.cur;
+            document.getElementById('memoInput').placeholder = t.ph;
+            document.getElementById('l-img').innerText = t.img;
+            document.getElementById('l-color').innerText = t.color;
+            document.getElementById('l-bold').innerText = t.bold;
+            document.getElementById('l-italic').innerText = t.italic;
+            document.getElementById('l-save').innerText = t.save;
+            document.getElementById('sBtn').innerText = t.space;
+            document.getElementById('pBtn').innerText = t.punct;
+            updateCount(); render();
+        }
+
+        function setTextColor(c, el) {
+            textColor = c;
+            document.querySelectorAll('.dot').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('memoInput').style.color = c === 'default' ? '' : c;
+            document.getElementById('textColorBtn').style.color = c === 'default' ? '' : c;
+        }
+
+        function toggleBold() {
+            isBold = !isBold;
+            document.getElementById('boldBtn').classList.toggle('active', isBold);
+            document.getElementById('memoInput').style.fontWeight = isBold ? 'bold' : 'normal';
+        }
+
+        function toggleItalic() {
+            isItalic = !isItalic;
+            document.getElementById('italicBtn').classList.toggle('active', isItalic);
+            document.getElementById('memoInput').style.fontStyle = isItalic ? 'italic' : 'normal';
+        }
+
+        function toggleOpt(t) {
+            if(t==='s') incS = !incS; if(t==='p') incP = !incP;
+            document.getElementById(t+'Btn').classList.toggle('active', t==='s'?incS:incP);
+            updateCount();
+        }
+
+        function updateCount() {
+            let v = document.getElementById('memoInput').value;
+            if(!incS) v = v.replace(/[\s\u3000]/g, '');
+            if(!incP) v = v.replace(/[、。，．,!?,.「」『』（）()[\]]/g, '');
+            document.getElementById('countTxt').innerText = v.length + dict[lang].unit;
+        }
+
+        function loadImg(e) {
+            const f = e.target.files[0]; if(!f) return;
+            const r = new FileReader();
+            r.onload = ev => { imgData = ev.target.result; document.getElementById('previewImg').src = imgData; document.getElementById('previewBox').style.display = 'block'; };
+            r.readAsDataURL(f);
+        }
+
+        function clearImg() { imgData = null; document.getElementById('fileInput').value = ''; document.getElementById('previewBox').style.display = 'none'; }
+
+        function save() {
+            const text = document.getElementById('memoInput').value.trim();
+            if(!text && !imgData) return;
+            memos.unshift({ id: Date.now(), text, img: imgData, textColor, isBold, isItalic });
+            document.getElementById('memoInput').value = ''; 
+            clearImg(); 
+            setTextColor('default', document.querySelector('.dot'));
+            if(isBold) toggleBold();
+            if(isItalic) toggleItalic();
+            updateCount();
+            sync();
+        }
+
+        function del(id) { memos = memos.filter(m => m.id !== id); sync(); }
+        async function copyText(t, b) { await navigator.clipboard.writeText(t); let o = b.innerText; b.innerText = dict[lang].done; setTimeout(() => b.innerText = o, 1200); }
+        
+        function sync() {
+            localStorage.setItem('simple_memos', JSON.stringify(memos));
+            render();
+        }
+
+        function render() {
+            const c = document.getElementById('container'), t = dict[lang];
+            if(!memos.length) return c.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--sub); margin-top:60px;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5; margin-bottom:8px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><div>${t.empty}</div></div>`;
+            c.innerHTML = memos.map(m => `
+                <div class="card">
+                    ${m.img ? `<img src="${m.img}">` : ''}
+                    <p style="${m.textColor && m.textColor !== 'default' ? 'color:'+m.textColor+';' : ''}${m.isBold ? 'font-weight:bold;' : ''}${m.isItalic ? 'font-style:italic;' : ''}">${esc(m.text)}</p>
+                    <div class="card-btns">
+                        <button class="action-btn" onclick="copyText(\`${escJs(m.text)}\`, this)">${t.copy}</button>
+                        <button class="action-btn del" onclick="del(${m.id})">${t.del}</button>
+                    </div>
+                </div>`).join('');
+        }
+        function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+        function escJs(s) { return s ? s.replace(/\\/g,'\\\\').replace(/`/g,'\\`') : ''; }
+    </script>
+</body>
+</html>
